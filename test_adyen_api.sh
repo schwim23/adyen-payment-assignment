@@ -146,7 +146,9 @@ EOF
     
     AUTH_RESPONSE=$(make_api_request "POST" "${BASE_URL}/v71/payments" "${AUTH_PAYLOAD}")
     
-    echo "Response: ${AUTH_RESPONSE}"
+    echo "📋 ADYEN API RESPONSE:"
+    echo "====================="
+    echo "${AUTH_RESPONSE}" | jq '.'
     echo ""
     
     # Check if authorization was successful
@@ -157,7 +159,11 @@ EOF
     else
         echo "❌ Authorization failed with result: ${RESULT_CODE}"
         ERROR_MESSAGE=$(echo ${AUTH_RESPONSE} | jq -r '.message // "Unknown error"')
+        REFUSAL_REASON=$(echo ${AUTH_RESPONSE} | jq -r '.refusalReason // ""')
         echo "Error: ${ERROR_MESSAGE}"
+        if [ -n "${REFUSAL_REASON}" ] && [ "${REFUSAL_REASON}" != "null" ]; then
+            echo "Refusal Reason: ${REFUSAL_REASON}"
+        fi
         echo ""
         read -p "Would you like to retry with different parameters? (y/n): " retry_choice
         if [ "$retry_choice" != "y" ] && [ "$retry_choice" != "Y" ]; then
@@ -201,7 +207,9 @@ EOF
     
     CAPTURE_RESPONSE=$(make_api_request "POST" "${BASE_URL}/v71/payments/${PSP_REFERENCE}/captures" "${CAPTURE_PAYLOAD}")
     
-    echo "Response: ${CAPTURE_RESPONSE}"
+    echo "📋 ADYEN API RESPONSE:"
+    echo "====================="
+    echo "${CAPTURE_RESPONSE}" | jq '.'
     echo ""
     
     # Check if capture was successful
@@ -214,7 +222,11 @@ EOF
     else
         echo "❌ Capture failed with status: ${CAPTURE_STATUS}"
         CAPTURE_ERROR=$(echo ${CAPTURE_RESPONSE} | jq -r '.message // "Unknown error"')
+        ERROR_CODE=$(echo ${CAPTURE_RESPONSE} | jq -r '.errorCode // ""')
         echo "Error: ${CAPTURE_ERROR}"
+        if [ -n "${ERROR_CODE}" ] && [ "${ERROR_CODE}" != "null" ]; then
+            echo "Error Code: ${ERROR_CODE}"
+        fi
         echo ""
         read -p "Would you like to retry with a different amount? (y/n): " retry_choice
         if [ "$retry_choice" != "y" ] && [ "$retry_choice" != "Y" ]; then
@@ -250,7 +262,9 @@ EOF
     
     REFUND_RESPONSE=$(make_api_request "POST" "${BASE_URL}/v71/payments/${PSP_REFERENCE}/refunds" "${REFUND_PAYLOAD}")
     
-    echo "Response: ${REFUND_RESPONSE}"
+    echo "📋 ADYEN API RESPONSE:"
+    echo "====================="
+    echo "${REFUND_RESPONSE}" | jq '.'
     echo ""
     
     # Check if refund was successful
@@ -263,7 +277,11 @@ EOF
     else
         echo "❌ Refund failed with status: ${REFUND_STATUS}"
         REFUND_ERROR=$(echo ${REFUND_RESPONSE} | jq -r '.message // "Unknown error"')
+        ERROR_CODE=$(echo ${REFUND_RESPONSE} | jq -r '.errorCode // ""')
         echo "Error: ${REFUND_ERROR}"
+        if [ -n "${ERROR_CODE}" ] && [ "${ERROR_CODE}" != "null" ]; then
+            echo "Error Code: ${ERROR_CODE}"
+        fi
         echo ""
         read -p "Would you like to retry with a different amount? (y/n): " retry_choice
         if [ "$retry_choice" != "y" ] && [ "$retry_choice" != "Y" ]; then
@@ -306,7 +324,9 @@ EOF
     
     RECURRING_RESPONSE=$(make_api_request "POST" "${BASE_URL}/v71/payments" "${RECURRING_PAYLOAD}")
     
-    echo "Response: ${RECURRING_RESPONSE}"
+    echo "📋 ADYEN API RESPONSE:"
+    echo "====================="
+    echo "${RECURRING_RESPONSE}" | jq '.'
     echo ""
     
     # Check if recurring payment was successful
@@ -319,7 +339,11 @@ EOF
     else
         echo "❌ Recurring payment failed with result: ${RECURRING_RESULT}"
         RECURRING_ERROR=$(echo ${RECURRING_RESPONSE} | jq -r '.message // "Unknown error"')
+        REFUSAL_REASON=$(echo ${RECURRING_RESPONSE} | jq -r '.refusalReason // ""')
         echo "Error: ${RECURRING_ERROR}"
+        if [ -n "${REFUSAL_REASON}" ] && [ "${REFUSAL_REASON}" != "null" ]; then
+            echo "Refusal Reason: ${REFUSAL_REASON}"
+        fi
         echo ""
         read -p "Would you like to retry with a different amount? (y/n): " retry_choice
         if [ "$retry_choice" != "y" ] && [ "$retry_choice" != "Y" ]; then
