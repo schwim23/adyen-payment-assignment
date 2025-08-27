@@ -10,7 +10,7 @@
     <div class="container">
         <div class="header">
             <h1>🚀 Adyen Payment Flow Demo</h1>
-            <p>Complete payment integration for technical interview</p>
+            <p>Mike Schwimmer payment API integration for technical interview</p>
         </div>
         
         <div class="content">
@@ -18,7 +18,8 @@
             <div class="step">
                 <h3><span class="step-number">1</span>Authorize & Tokenize Payment</h3>
                 <div class="test-card-info">
-                    <strong>Test Visa Card:</strong> 4111 1111 1111 1111 | CVV: 737 | Exp: 03/30
+                    <strong>Default Test Visa Card:</strong> 4111 1111 1111 1111 | CVV: 737 | Exp: 03/30
+                    <br><strong>Customize below to test different scenarios and error handling</strong>
                 </div>
                 
                 <div class="grid">
@@ -27,29 +28,35 @@
                         <input type="text" id="fullName" placeholder="Enter your full name" value="">
                     </div>
                     <div class="form-group">
+                        <label for="authAmount">Authorization Amount (minor units):</label>
+                        <input type="number" id="authAmount" value="10000" placeholder="10000 = 100.00 EUR">
+                    </div>
+                </div>
+                
+                <div class="grid">
+                    <div class="form-group">
                         <label for="cardNumber">Card Number:</label>
-                        <input type="text" id="cardNumber" value="4111111111111111" readonly>
+                        <input type="text" id="cardNumber" value="4111111111111111" placeholder="16-digit card number">
+                    </div>
+                    <div class="form-group">
+                        <label for="cvc">CVC:</label>
+                        <input type="text" id="cvc" value="737" placeholder="3-4 digits">
                     </div>
                 </div>
                 
                 <div class="grid">
                     <div class="form-group">
                         <label for="expiryMonth">Expiry Month:</label>
-                        <input type="text" id="expiryMonth" value="03" readonly>
+                        <input type="text" id="expiryMonth" value="03" placeholder="MM">
                     </div>
                     <div class="form-group">
                         <label for="expiryYear">Expiry Year:</label>
-                        <input type="text" id="expiryYear" value="2030" readonly>
+                        <input type="text" id="expiryYear" value="2030" placeholder="YYYY">
                     </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="cvc">CVC:</label>
-                    <input type="text" id="cvc" value="737" readonly>
-                </div>
-                
                 <button class="btn" onclick="authorizePayment()" id="authorizeBtn">
-                    💳 Authorize 100 EUR Payment
+                    💳 Authorize Payment
                 </button>
                 
                 <div id="authResponse" class="response-box" style="display: none;"></div>
@@ -63,11 +70,16 @@
             <div class="step">
                 <h3><span class="step-number">2</span>Capture Funds</h3>
                 <div class="info">
-                    Partial capture of 50 EUR from the authorized 100 EUR payment.
+                    Capture funds from the authorized payment. Amount cannot exceed authorization amount.
+                </div>
+                
+                <div class="form-group">
+                    <label for="captureAmount">Capture Amount (minor units):</label>
+                    <input type="number" id="captureAmount" value="5000" placeholder="5000 = 50.00 EUR">
                 </div>
                 
                 <button class="btn" onclick="capturePayment()" id="captureBtn" disabled>
-                    💰 Capture 50 EUR
+                    💰 Capture Funds
                 </button>
                 
                 <div id="captureResponse" class="response-box" style="display: none;"></div>
@@ -81,11 +93,16 @@
             <div class="step">
                 <h3><span class="step-number">3</span>Refund Money</h3>
                 <div class="info">
-                    Refund the captured 50 EUR. A 100 EUR refund would fail because only 50 EUR was captured.
+                    Refund captured funds. Amount cannot exceed captured amount.
+                </div>
+                
+                <div class="form-group">
+                    <label for="refundAmount">Refund Amount (minor units):</label>
+                    <input type="number" id="refundAmount" value="5000" placeholder="5000 = 50.00 EUR">
                 </div>
                 
                 <button class="btn" onclick="refundPayment()" id="refundBtn" disabled>
-                    🔄 Refund 50 EUR
+                    🔄 Refund Money
                 </button>
                 
                 <div id="refundResponse" class="response-box" style="display: none;"></div>
@@ -95,11 +112,16 @@
             <div class="step">
                 <h3><span class="step-number">4</span>Recurring Payment with Token</h3>
                 <div class="info">
-                    Make a 50 EUR payment using the stored payment method from Step 1.
+                    Make a payment using the stored payment method from Step 1.
+                </div>
+                
+                <div class="form-group">
+                    <label for="recurringAmount">Recurring Payment Amount (minor units):</label>
+                    <input type="number" id="recurringAmount" value="5000" placeholder="5000 = 50.00 EUR">
                 </div>
                 
                 <button class="btn" onclick="recurringPayment()" id="recurringBtn" disabled>
-                    🔁 Pay 50 EUR with Token
+                    🔁 Pay with Stored Token
                 </button>
                 
                 <div id="recurringResponse" class="response-box" style="display: none;"></div>

@@ -57,13 +57,13 @@ async function makeFlaskRequest(endpoint, payload) {
 
 async function authorizePayment() {
     const fullName = document.getElementById('fullName').value.trim();
-    logAction('Starting authorization', { fullName });
+    const authAmount = parseInt(document.getElementById('authAmount').value);
+    const cardNumber = document.getElementById('cardNumber').value.trim();
+    const cvc = document.getElementById('cvc').value.trim();
+    const expiryMonth = document.getElementById('expiryMonth').value.trim();
+    const expiryYear = document.getElementById('expiryYear').value.trim();
     
-    if (!fullName) {
-        logError('Full name is required', 'authorizePayment validation');
-        alert('Please enter your full name');
-        return;
-    }
+    logAction('Starting authorization', { fullName, authAmount, cardNumber: cardNumber.slice(0,4) + '****' });
     
     const btn = document.getElementById('authorizeBtn');
     btn.disabled = true;
@@ -71,7 +71,12 @@ async function authorizePayment() {
     logAction('Authorization button disabled, processing started');
     
     const payload = {
-        fullName: fullName
+        fullName: fullName,
+        authAmount: authAmount,
+        cardNumber: cardNumber,
+        cvc: cvc,
+        expiryMonth: expiryMonth,
+        expiryYear: expiryYear
     };
     
     try {
@@ -119,7 +124,9 @@ async function authorizePayment() {
 }
 
 async function capturePayment() {
-    logAction('Starting capture payment', { pspReference: paymentData.pspReference });
+    const captureAmount = parseInt(document.getElementById('captureAmount').value);
+    
+    logAction('Starting capture payment', { pspReference: paymentData.pspReference, captureAmount });
     
     if (!paymentData.pspReference) {
         logError('PSP Reference missing', 'capturePayment validation');
@@ -134,7 +141,8 @@ async function capturePayment() {
     
     const payload = {
         pspReference: paymentData.pspReference,
-        reference: paymentData.reference
+        reference: paymentData.reference,
+        captureAmount: captureAmount
     };
     
     try {
@@ -170,7 +178,9 @@ async function capturePayment() {
 }
 
 async function refundPayment() {
-    logAction('Starting refund payment', { captureReference: paymentData.captureReference });
+    const refundAmount = parseInt(document.getElementById('refundAmount').value);
+    
+    logAction('Starting refund payment', { captureReference: paymentData.captureReference, refundAmount });
     
     if (!paymentData.captureReference) {
         logError('Capture reference missing', 'refundPayment validation');
@@ -185,7 +195,8 @@ async function refundPayment() {
     
     const payload = {
         pspReference: paymentData.pspReference,
-        reference: paymentData.reference
+        reference: paymentData.reference,
+        refundAmount: refundAmount
     };
     
     try {
@@ -209,9 +220,12 @@ async function refundPayment() {
 }
 
 async function recurringPayment() {
+    const recurringAmount = parseInt(document.getElementById('recurringAmount').value);
+    
     logAction('Starting recurring payment', { 
         recurringDetailReference: paymentData.recurringDetailReference,
-        shopperReference: paymentData.shopperReference 
+        shopperReference: paymentData.shopperReference,
+        recurringAmount: recurringAmount
     });
     
     if (!paymentData.recurringDetailReference) {
@@ -228,7 +242,8 @@ async function recurringPayment() {
     const payload = {
         recurringDetailReference: paymentData.recurringDetailReference,
         shopperReference: paymentData.shopperReference,
-        reference: paymentData.reference
+        reference: paymentData.reference,
+        recurringAmount: recurringAmount
     };
     
     try {

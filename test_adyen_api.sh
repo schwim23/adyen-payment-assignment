@@ -34,6 +34,50 @@ MERCHANT_ACCOUNT="${ADYEN_MERCHANT_ACCOUNT}"
 BASE_URL="${ADYEN_PAYMENTS_ENDPOINT}"
 ENVIRONMENT="${ADYEN_ENVIRONMENT:-test}"
 
+# Function to get user input with default
+get_input() {
+    local prompt="$1"
+    local default="$2"
+    local input
+    
+    read -p "${prompt} [${default}]: " input
+    if [ -z "$input" ]; then
+        echo "$default"
+    else
+        echo "$input"
+    fi
+}
+
+# Function to show request and get confirmation
+show_request_and_confirm() {
+    local step_name="$1"
+    local method="$2"
+    local url="$3"
+    local payload="$4"
+    
+    echo ""
+    echo "About to send ${step_name}:"
+    echo ""
+    echo "curl -X ${method} \"${url}\" \\"
+    echo "  -H \"Content-Type: application/json\" \\"
+    echo "  -H \"X-API-Key: ${API_KEY:0:10}...${API_KEY: -10}\" \\"
+    echo "  -d '${payload}'"
+    echo ""
+    read -p "Press Enter to send this request (or Ctrl+C to cancel)..."
+}
+
+# Function to make API request and handle errors
+make_api_request() {
+    local method="$1"
+    local url="$2" 
+    local payload="$3"
+    
+    curl -s -X "${method}" "${url}" \
+        -H "Content-Type: application/json" \
+        -H "X-API-Key: ${API_KEY}" \
+        -d "${payload}"
+}
+
 # Generate unique identifiers
 TIMESTAMP=$(date +%s%3N)
 REFERENCE="Test_Payment_${TIMESTAMP}"
@@ -59,65 +103,70 @@ if ! command -v jq &> /dev/null; then
 fi
 
 # Step 1: Authorize Payment and Tokenize Card
-echo "STEP 1: AUTHORIZE PAYMENT (100 EUR) AND TOKENIZE CARD"
-echo "======================================================"
+echo "STEP 1: AUTHORIZE PAYMENT AND TOKENIZE CARD"
+echo "=========================================="
 
-echo "About to send the following request:"
-echo ""
-echo "curl -X POST \"${BASE_URL}/v71/payments\" \\"
-echo "  -H \"Content-Type: application/json\" \\"
-echo "  -H \"X-API-Key: ${API_KEY:0:10}...${API_KEY: -10}\" \\"
-echo "  -d '{"
-echo "    \"amount\": {"
-echo "      \"currency\": \"EUR\","
-echo "      \"value\": 10000"
-echo "    },"
-echo "    \"reference\": \"${REFERENCE}\","
-echo "    \"paymentMethod\": {"
-echo "      \"type\": \"scheme\","
-echo "      \"number\": \"4111111111111111\","
-echo "      \"expiryMonth\": \"03\","
-echo "      \"expiryYear\": \"2030\","
-echo "      \"cvc\": \"737\","
-echo "      \"holderName\": \"John Smith\""
-echo "    },"
-echo "    \"merchantAccount\": \"${MERCHANT_ACCOUNT}\","
-echo "    \"captureDelayHours\": 0,"
-echo "    \"storePaymentMethod\": true,"
-echo "    \"shopperReference\": \"${SHOPPER_REFERENCE}\","
-echo "    \"shopperInteraction\": \"Ecommerce\","
-echo "    \"recurringProcessingModel\": \"CardOnFile\""
-echo "  }'"
-echo ""
-read -p "Press Enter to send this request (or Ctrl+C to cancel)..."
+# Get authorization parameters
+while true; do
+    echo "Enter authorization parameters:"
+    CARDHOLDER_NAME=$(get_input "Cardholder Name" "John Smith")
+    AUTH_AMOUNT=$(get_input "Authorization Amount (minor units, e.g. 10000 = 100.00 EUR)" "10000")
+    CARD_NUMBER=$(get_input "Card Number" "4111111111111111")
+    CVC=$(get_input "CVC" "737")
+    EXPIRY_MONTH=$(get_input "Expiry Month (MM)" "03")
+    EXPIRY_YEAR=$(get_input "Expiry Year (YYYY)" "2030")
+    
+    # Build authorization payload
+    AUTH_PAYLOAD=$(cat <<EOF
+{
+  "amount": {
+    "currency": "EUR",
+    "value": ${AUTH_AMOUNT}
+  },
+  "reference": "${REFERENCE}",
+  "paymentMethod": {
+    "type": "scheme",
+    "number": "${CARD_NUMBER}",
+    "expiryMonth": "${EXPIRY_MONTH}",
+    "expiryYear": "${EXPIRY_YEAR}",
+    "cvc": "${CVC}",
+    "holderName": "${CARDHOLDER_NAME}"
+  },
+  "merchantAccount": "${MERCHANT_ACCOUNT}",
+  "captureDelayHours": 0,
+  "storePaymentMethod": true,
+  "shopperReference": "${SHOPPER_REFERENCE}",
+  "shopperInteraction": "Ecommerce",
+  "recurringProcessingModel": "CardOnFile"
+}
+EOF
+)
 
-AUTH_RESPONSE=$(curl -s -X POST "${BASE_URL}/v71/payments" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: ${API_KEY}" \
-  -d '{
-    "amount": {
-      "currency": "EUR",
-      "value": 10000
-    },
-    "reference": "'${REFERENCE}'",
-    "paymentMethod": {
-      "type": "scheme",
-      "number": "4111111111111111",
-      "expiryMonth": "03",
-      "expiryYear": "2030",
-      "cvc": "737",
-      "holderName": "John Smith"
-    },
-    "merchantAccount": "'${MERCHANT_ACCOUNT}'",
-    "captureDelayHours": 0,
-    "storePaymentMethod": true,
-    "shopperReference": "'${SHOPPER_REFERENCE}'",
-    "shopperInteraction": "Ecommerce",
-    "recurringProcessingModel": "CardOnFile"
-  }')
-
-echo "Response: ${AUTH_RESPONSE}"
-echo ""
+    show_request_and_confirm "authorization request" "POST" "${BASE_URL}/v71/payments" "${AUTH_PAYLOAD}"
+    
+    AUTH_RESPONSE=$(make_api_request "POST" "${BASE_URL}/v71/payments" "${AUTH_PAYLOAD}")
+    
+    echo "Response: ${AUTH_RESPONSE}"
+    echo ""
+    
+    # Check if authorization was successful
+    RESULT_CODE=$(echo ${AUTH_RESPONSE} | jq -r '.resultCode')
+    if [ "${RESULT_CODE}" = "Authorised" ]; then
+        echo "✅ Step 1 Complete: Authorization successful"
+        break
+    else
+        echo "❌ Authorization failed with result: ${RESULT_CODE}"
+        ERROR_MESSAGE=$(echo ${AUTH_RESPONSE} | jq -r '.message // "Unknown error"')
+        echo "Error: ${ERROR_MESSAGE}"
+        echo ""
+        read -p "Would you like to retry with different parameters? (y/n): " retry_choice
+        if [ "$retry_choice" != "y" ] && [ "$retry_choice" != "Y" ]; then
+            echo "Exiting due to authorization failure."
+            exit 1
+        fi
+        echo "Please enter different parameters:"
+    fi
+done
 
 # Extract values from authorization response
 PSP_REFERENCE=$(echo ${AUTH_RESPONSE} | jq -r '.pspReference')
@@ -128,193 +177,160 @@ echo "  PSP Reference: ${PSP_REFERENCE}"
 echo "  Recurring Detail Reference: ${RECURRING_DETAIL_REFERENCE}"
 echo ""
 
-# Check if authorization was successful
-RESULT_CODE=$(echo ${AUTH_RESPONSE} | jq -r '.resultCode')
-if [ "${RESULT_CODE}" != "Authorised" ]; then
-    echo "❌ Authorization failed with result: ${RESULT_CODE}"
-    ERROR_MESSAGE=$(echo ${AUTH_RESPONSE} | jq -r '.message // "Unknown error"')
-    echo "Error: ${ERROR_MESSAGE}"
-    exit 1
-fi
-
-echo "✅ Step 1 Complete: Authorization successful"
-echo ""
-
 # Step 2: Capture Payment
-echo "STEP 2: CAPTURE PAYMENT (50 EUR)"
-echo "================================="
+echo "STEP 2: CAPTURE PAYMENT"
+echo "======================"
 
-echo "About to send the following request:"
-echo ""
-echo "curl -X POST \"${BASE_URL}/v71/payments/${PSP_REFERENCE}/captures\" \\"
-echo "  -H \"Content-Type: application/json\" \\"
-echo "  -H \"X-API-Key: ${API_KEY:0:10}...${API_KEY: -10}\" \\"
-echo "  -d '{"
-echo "    \"amount\": {"
-echo "      \"currency\": \"EUR\","
-echo "      \"value\": 5000"
-echo "    },"
-echo "    \"reference\": \"${REFERENCE}_capture\","
-echo "    \"merchantAccount\": \"${MERCHANT_ACCOUNT}\""
-echo "  }'"
-echo ""
-read -p "Press Enter to send this request (or Ctrl+C to cancel)..."
+while true; do
+    CAPTURE_AMOUNT=$(get_input "Capture Amount (minor units, e.g. 5000 = 50.00 EUR)" "5000")
+    
+    # Build capture payload
+    CAPTURE_PAYLOAD=$(cat <<EOF
+{
+  "amount": {
+    "currency": "EUR",
+    "value": ${CAPTURE_AMOUNT}
+  },
+  "reference": "${REFERENCE}_capture",
+  "merchantAccount": "${MERCHANT_ACCOUNT}"
+}
+EOF
+)
 
-CAPTURE_RESPONSE=$(curl -s -X POST "${BASE_URL}/v71/payments/${PSP_REFERENCE}/captures" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: ${API_KEY}" \
-  -d '{
-    "amount": {
-      "currency": "EUR",
-      "value": 5000
-    },
-    "reference": "'${REFERENCE}'_capture",
-    "merchantAccount": "'${MERCHANT_ACCOUNT}'"
-  }')
-
-echo "Response: ${CAPTURE_RESPONSE}"
-echo ""
-
-# Extract capture reference
-CAPTURE_REFERENCE=$(echo ${CAPTURE_RESPONSE} | jq -r '.pspReference')
-
-echo "Extracted Data:"
-echo "  Capture Reference: ${CAPTURE_REFERENCE}"
-echo ""
-
-# Check if capture was successful
-CAPTURE_STATUS=$(echo ${CAPTURE_RESPONSE} | jq -r '.status')
-if [ "${CAPTURE_STATUS}" != "received" ]; then
-    echo "❌ Capture failed with status: ${CAPTURE_STATUS}"
-    CAPTURE_ERROR=$(echo ${CAPTURE_RESPONSE} | jq -r '.message // "Unknown error"')
-    echo "Error: ${CAPTURE_ERROR}"
-    echo "Continuing anyway..."
-else
-    echo "✅ Step 2 Complete: Capture successful"
-fi
+    show_request_and_confirm "capture request" "POST" "${BASE_URL}/v71/payments/${PSP_REFERENCE}/captures" "${CAPTURE_PAYLOAD}"
+    
+    CAPTURE_RESPONSE=$(make_api_request "POST" "${BASE_URL}/v71/payments/${PSP_REFERENCE}/captures" "${CAPTURE_PAYLOAD}")
+    
+    echo "Response: ${CAPTURE_RESPONSE}"
+    echo ""
+    
+    # Check if capture was successful
+    CAPTURE_STATUS=$(echo ${CAPTURE_RESPONSE} | jq -r '.status')
+    if [ "${CAPTURE_STATUS}" = "received" ]; then
+        echo "✅ Step 2 Complete: Capture successful"
+        CAPTURE_REFERENCE=$(echo ${CAPTURE_RESPONSE} | jq -r '.pspReference')
+        echo "  Capture Reference: ${CAPTURE_REFERENCE}"
+        break
+    else
+        echo "❌ Capture failed with status: ${CAPTURE_STATUS}"
+        CAPTURE_ERROR=$(echo ${CAPTURE_RESPONSE} | jq -r '.message // "Unknown error"')
+        echo "Error: ${CAPTURE_ERROR}"
+        echo ""
+        read -p "Would you like to retry with a different amount? (y/n): " retry_choice
+        if [ "$retry_choice" != "y" ] && [ "$retry_choice" != "Y" ]; then
+            echo "Skipping capture step."
+            break
+        fi
+        echo "Please enter a different capture amount:"
+    fi
+done
 echo ""
 
 # Step 3: Refund Payment
-echo "STEP 3: REFUND PAYMENT (50 EUR)"
-echo "==============================="
+echo "STEP 3: REFUND PAYMENT"
+echo "====================="
 
-echo "About to send the following request:"
-echo ""
-echo "curl -X POST \"${BASE_URL}/v71/payments/${PSP_REFERENCE}/refunds\" \\"
-echo "  -H \"Content-Type: application/json\" \\"
-echo "  -H \"X-API-Key: ${API_KEY:0:10}...${API_KEY: -10}\" \\"
-echo "  -d '{"
-echo "    \"amount\": {"
-echo "      \"currency\": \"EUR\","
-echo "      \"value\": 5000"
-echo "    },"
-echo "    \"reference\": \"${REFERENCE}_refund\","
-echo "    \"merchantAccount\": \"${MERCHANT_ACCOUNT}\""
-echo "  }'"
-echo ""
-read -p "Press Enter to send this request (or Ctrl+C to cancel)..."
+while true; do
+    REFUND_AMOUNT=$(get_input "Refund Amount (minor units, e.g. 5000 = 50.00 EUR)" "5000")
+    
+    # Build refund payload
+    REFUND_PAYLOAD=$(cat <<EOF
+{
+  "amount": {
+    "currency": "EUR",
+    "value": ${REFUND_AMOUNT}
+  },
+  "reference": "${REFERENCE}_refund",
+  "merchantAccount": "${MERCHANT_ACCOUNT}"
+}
+EOF
+)
 
-REFUND_RESPONSE=$(curl -s -X POST "${BASE_URL}/v71/payments/${PSP_REFERENCE}/refunds" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: ${API_KEY}" \
-  -d '{
-    "amount": {
-      "currency": "EUR",
-      "value": 5000
-    },
-    "reference": "'${REFERENCE}'_refund",
-    "merchantAccount": "'${MERCHANT_ACCOUNT}'"
-  }')
-
-echo "Response: ${REFUND_RESPONSE}"
-echo ""
-
-# Extract refund reference
-REFUND_REFERENCE=$(echo ${REFUND_RESPONSE} | jq -r '.pspReference')
-
-echo "Extracted Data:"
-echo "  Refund Reference: ${REFUND_REFERENCE}"
-echo ""
-
-# Check if refund was successful
-REFUND_STATUS=$(echo ${REFUND_RESPONSE} | jq -r '.status')
-if [ "${REFUND_STATUS}" != "received" ]; then
-    echo "❌ Refund failed with status: ${REFUND_STATUS}"
-    REFUND_ERROR=$(echo ${REFUND_RESPONSE} | jq -r '.message // "Unknown error"')
-    echo "Error: ${REFUND_ERROR}"
-    echo "Continuing anyway..."
-else
-    echo "✅ Step 3 Complete: Refund successful"
-fi
+    show_request_and_confirm "refund request" "POST" "${BASE_URL}/v71/payments/${PSP_REFERENCE}/refunds" "${REFUND_PAYLOAD}"
+    
+    REFUND_RESPONSE=$(make_api_request "POST" "${BASE_URL}/v71/payments/${PSP_REFERENCE}/refunds" "${REFUND_PAYLOAD}")
+    
+    echo "Response: ${REFUND_RESPONSE}"
+    echo ""
+    
+    # Check if refund was successful
+    REFUND_STATUS=$(echo ${REFUND_RESPONSE} | jq -r '.status')
+    if [ "${REFUND_STATUS}" = "received" ]; then
+        echo "✅ Step 3 Complete: Refund successful"
+        REFUND_REFERENCE=$(echo ${REFUND_RESPONSE} | jq -r '.pspReference')
+        echo "  Refund Reference: ${REFUND_REFERENCE}"
+        break
+    else
+        echo "❌ Refund failed with status: ${REFUND_STATUS}"
+        REFUND_ERROR=$(echo ${REFUND_RESPONSE} | jq -r '.message // "Unknown error"')
+        echo "Error: ${REFUND_ERROR}"
+        echo ""
+        read -p "Would you like to retry with a different amount? (y/n): " retry_choice
+        if [ "$retry_choice" != "y" ] && [ "$retry_choice" != "Y" ]; then
+            echo "Skipping refund step."
+            break
+        fi
+        echo "Please enter a different refund amount:"
+    fi
+done
 echo ""
 
 # Step 4: Recurring Payment
-echo "STEP 4: RECURRING PAYMENT (50 EUR) USING STORED TOKEN"
-echo "====================================================="
+echo "STEP 4: RECURRING PAYMENT USING STORED TOKEN"
+echo "============================================="
 
-echo "About to send the following request:"
+while true; do
+    RECURRING_AMOUNT=$(get_input "Recurring Payment Amount (minor units, e.g. 5000 = 50.00 EUR)" "5000")
+    
+    # Build recurring payment payload
+    RECURRING_PAYLOAD=$(cat <<EOF
+{
+  "amount": {
+    "currency": "EUR",
+    "value": ${RECURRING_AMOUNT}
+  },
+  "reference": "${REFERENCE}",
+  "paymentMethod": {
+    "type": "scheme",
+    "recurringDetailReference": "${RECURRING_DETAIL_REFERENCE}"
+  },
+  "merchantAccount": "${MERCHANT_ACCOUNT}",
+  "shopperReference": "${SHOPPER_REFERENCE}",
+  "shopperInteraction": "ContAuth",
+  "recurringProcessingModel": "Subscription"
+}
+EOF
+)
+
+    show_request_and_confirm "recurring payment request" "POST" "${BASE_URL}/v71/payments" "${RECURRING_PAYLOAD}"
+    
+    RECURRING_RESPONSE=$(make_api_request "POST" "${BASE_URL}/v71/payments" "${RECURRING_PAYLOAD}")
+    
+    echo "Response: ${RECURRING_RESPONSE}"
+    echo ""
+    
+    # Check if recurring payment was successful
+    RECURRING_RESULT=$(echo ${RECURRING_RESPONSE} | jq -r '.resultCode')
+    if [ "${RECURRING_RESULT}" = "Authorised" ]; then
+        echo "✅ Step 4 Complete: Recurring payment successful"
+        RECURRING_PSP_REFERENCE=$(echo ${RECURRING_RESPONSE} | jq -r '.pspReference')
+        echo "  Recurring Payment Reference: ${RECURRING_PSP_REFERENCE}"
+        break
+    else
+        echo "❌ Recurring payment failed with result: ${RECURRING_RESULT}"
+        RECURRING_ERROR=$(echo ${RECURRING_RESPONSE} | jq -r '.message // "Unknown error"')
+        echo "Error: ${RECURRING_ERROR}"
+        echo ""
+        read -p "Would you like to retry with a different amount? (y/n): " retry_choice
+        if [ "$retry_choice" != "y" ] && [ "$retry_choice" != "Y" ]; then
+            echo "Skipping recurring payment step."
+            break
+        fi
+        echo "Please enter a different recurring payment amount:"
+    fi
+done
+
 echo ""
-echo "curl -X POST \"${BASE_URL}/v71/payments\" \\"
-echo "  -H \"Content-Type: application/json\" \\"
-echo "  -H \"X-API-Key: ${API_KEY:0:10}...${API_KEY: -10}\" \\"
-echo "  -d '{"
-echo "    \"amount\": {"
-echo "      \"currency\": \"EUR\","
-echo "      \"value\": 5000"
-echo "    },"
-echo "    \"reference\": \"${REFERENCE}\","
-echo "    \"paymentMethod\": {"
-echo "      \"type\": \"scheme\","
-echo "      \"recurringDetailReference\": \"${RECURRING_DETAIL_REFERENCE}\""
-echo "    },"
-echo "    \"merchantAccount\": \"${MERCHANT_ACCOUNT}\","
-echo "    \"shopperReference\": \"${SHOPPER_REFERENCE}\","
-echo "    \"shopperInteraction\": \"ContAuth\","
-echo "    \"recurringProcessingModel\": \"Subscription\""
-echo "  }'"
-echo ""
-read -p "Press Enter to send this request (or Ctrl+C to cancel)..."
-
-RECURRING_RESPONSE=$(curl -s -X POST "${BASE_URL}/v71/payments" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: ${API_KEY}" \
-  -d '{
-    "amount": {
-      "currency": "EUR",
-      "value": 5000
-    },
-    "reference": "'${REFERENCE}'",
-    "paymentMethod": {
-      "type": "scheme",
-      "recurringDetailReference": "'${RECURRING_DETAIL_REFERENCE}'"
-    },
-    "merchantAccount": "'${MERCHANT_ACCOUNT}'",
-    "shopperReference": "'${SHOPPER_REFERENCE}'",
-    "shopperInteraction": "ContAuth",
-    "recurringProcessingModel": "Subscription"
-  }')
-
-echo "Response: ${RECURRING_RESPONSE}"
-echo ""
-
-# Extract recurring payment reference
-RECURRING_PSP_REFERENCE=$(echo ${RECURRING_RESPONSE} | jq -r '.pspReference')
-
-echo "Extracted Data:"
-echo "  Recurring Payment Reference: ${RECURRING_PSP_REFERENCE}"
-echo ""
-
-# Check if recurring payment was successful
-RECURRING_RESULT=$(echo ${RECURRING_RESPONSE} | jq -r '.resultCode')
-if [ "${RECURRING_RESULT}" != "Authorised" ]; then
-    echo "❌ Recurring payment failed with result: ${RECURRING_RESULT}"
-    RECURRING_ERROR=$(echo ${RECURRING_RESPONSE} | jq -r '.message // "Unknown error"')
-    echo "Error: ${RECURRING_ERROR}"
-else
-    echo "✅ Step 4 Complete: Recurring payment successful"
-fi
-echo ""
-
 echo "=========================================="
 echo "SUMMARY"
 echo "=========================================="
@@ -323,8 +339,8 @@ echo "Merchant Account: ${MERCHANT_ACCOUNT}"
 echo "Original Reference: ${REFERENCE}"
 echo "Authorization PSP Reference: ${PSP_REFERENCE}"
 echo "Recurring Detail Reference: ${RECURRING_DETAIL_REFERENCE}"
-echo "Capture Reference: ${CAPTURE_REFERENCE}"
-echo "Refund Reference: ${REFUND_REFERENCE}"
-echo "Recurring Payment Reference: ${RECURRING_PSP_REFERENCE}"
+echo "Capture Reference: ${CAPTURE_REFERENCE:-N/A}"
+echo "Refund Reference: ${REFUND_REFERENCE:-N/A}"
+echo "Recurring Payment Reference: ${RECURRING_PSP_REFERENCE:-N/A}"
 echo ""
 echo "Payment flow complete!"

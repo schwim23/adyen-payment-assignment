@@ -98,8 +98,11 @@ def authorize_payment():
     data = request.get_json()
     
     full_name = data.get('fullName', '').strip()
-    if not full_name:
-        return jsonify({'success': False, 'error': 'Full name is required'}), 400
+    auth_amount = data.get('authAmount', 10000)
+    card_number = data.get('cardNumber', '4111111111111111').strip()
+    cvc = data.get('cvc', '737').strip()
+    expiry_month = data.get('expiryMonth', '03').strip()
+    expiry_year = data.get('expiryYear', '2030').strip()
     
     # Generate reference
     timestamp = int(time.time() * 1000)
@@ -108,15 +111,15 @@ def authorize_payment():
     payload = {
         'amount': {
             'currency': 'EUR',
-            'value': 10000  # 100.00 EUR in minor units
+            'value': auth_amount
         },
         'reference': reference,
         'paymentMethod': {
             'type': 'scheme',
-            'number': '4111111111111111',
-            'expiryMonth': '03',
-            'expiryYear': '2030',
-            'cvc': '737',
+            'number': card_number,
+            'expiryMonth': expiry_month,
+            'expiryYear': expiry_year,
+            'cvc': cvc,
             'holderName': full_name
         },
         'merchantAccount': CONFIG['merchant_account'],
@@ -143,14 +146,12 @@ def capture_payment():
     
     psp_reference = data.get('pspReference')
     reference = data.get('reference')
-    
-    if not psp_reference or not reference:
-        return jsonify({'success': False, 'error': 'PSP reference and reference are required'}), 400
+    capture_amount = data.get('captureAmount', 5000)
     
     payload = {
         'amount': {
             'currency': 'EUR',
-            'value': 5000  # 50.00 EUR in minor units
+            'value': capture_amount
         },
         'reference': f"{reference}_capture",
         'merchantAccount': CONFIG['merchant_account']
@@ -166,14 +167,12 @@ def refund_payment():
     
     psp_reference = data.get('pspReference')
     reference = data.get('reference')
-    
-    if not psp_reference or not reference:
-        return jsonify({'success': False, 'error': 'PSP reference and reference are required'}), 400
+    refund_amount = data.get('refundAmount', 5000)
     
     payload = {
         'amount': {
             'currency': 'EUR',
-            'value': 5000  # 50.00 EUR in minor units
+            'value': refund_amount
         },
         'reference': f"{reference}_refund",
         'merchantAccount': CONFIG['merchant_account']
@@ -190,15 +189,13 @@ def recurring_payment():
     recurring_detail_reference = data.get('recurringDetailReference')
     shopper_reference = data.get('shopperReference')
     reference = data.get('reference')
-    
-    if not all([recurring_detail_reference, shopper_reference, reference]):
-        return jsonify({'success': False, 'error': 'Recurring detail reference, shopper reference, and reference are required'}), 400
+    recurring_amount = data.get('recurringAmount', 5000)
     
     # Use the stored payment method with the SAME reference as per Adyen instructions
     payload = {
         'amount': {
             'currency': 'EUR',
-            'value': 5000  # 50.00 EUR in minor units
+            'value': recurring_amount
         },
         'reference': reference,  # Use the SAME reference from step 1
         'paymentMethod': {
