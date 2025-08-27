@@ -1,6 +1,6 @@
 # Adyen Payment Flow Demo
 
-A complete demonstration of Adyen's payment processing flow including authorization, capture, refund, and recurring payments. Available as both a Flask web application and a command-line shell script with full customization and error handling capabilities.
+A complete demonstration of Adyen's payment processing flow including authorization, capture, refund, and recurring payments. Available as a Flask web application a command-line shell script with full customization and error handling capabilities and a Postman Collection.
 
 > **⚠️ Demo Application Notice**: This is a demonstration application with **no client-side validation** - all parameters are passed directly to the Adyen API to showcase API error handling and response behavior. In production applications, implement proper input validation and sanitization before making API calls.
 
@@ -340,16 +340,10 @@ adyen_demo/
 4. **Authorization fails**:
    **Solution**: Verify API key and merchant account in `.env`
 
-## 🔒 Security Notes
-
-- **Never commit `.env`** - Contains sensitive credentials
-- **Use test environment** - This demo uses Adyen's test endpoints
-- **Rotate credentials** - Change API keys regularly
-- **Environment separation** - Use different credentials for test/production
 
 ## 🚀 Production Deployment
 
-For production use:
+For production the following changes need to be made at minimum:
 1. **Update endpoints** to live Adyen URLs
 2. **Use production credentials** in environment variables
 3. **Implement HTTPS** for all communications
@@ -365,4 +359,4 @@ For production use:
 
 ## 📄 License
 
-This project is for demonstration purposes only. Use in accordance with Adyen's terms of service.
+This project is for demonstration purposes only. 
