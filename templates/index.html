@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adyen Payment Flow Demo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Adyen Payment Flow Demo</h1>
+            <p>Complete payment integration for technical interview</p>
+        </div>
+        
+        <div class="content">
+            <!-- Step 1: Authorize and Tokenize -->
+            <div class="step">
+                <h3><span class="step-number">1</span>Authorize & Tokenize Payment</h3>
+                <div class="test-card-info">
+                    <strong>Test Visa Card:</strong> 4111 1111 1111 1111 | CVV: 737 | Exp: 03/30
+                </div>
+                
+                <div class="grid">
+                    <div class="form-group">
+                        <label for="fullName">Full Name (Reference):</label>
+                        <input type="text" id="fullName" placeholder="Enter your full name" value="">
+                    </div>
+                    <div class="form-group">
+                        <label for="cardNumber">Card Number:</label>
+                        <input type="text" id="cardNumber" value="4111111111111111" readonly>
+                    </div>
+                </div>
+                
+                <div class="grid">
+                    <div class="form-group">
+                        <label for="expiryMonth">Expiry Month:</label>
+                        <input type="text" id="expiryMonth" value="03" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="expiryYear">Expiry Year:</label>
+                        <input type="text" id="expiryYear" value="2030" readonly>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="cvc">CVC:</label>
+                    <input type="text" id="cvc" value="737" readonly>
+                </div>
+                
+                <button class="btn" onclick="authorizePayment()" id="authorizeBtn">
+                    💳 Authorize 100 EUR Payment
+                </button>
+                
+                <div id="authResponse" class="response-box" style="display: none;"></div>
+                <div id="storedData1" class="stored-data" style="display: none;">
+                    <strong>Stored Data:</strong>
+                    <div id="authData"></div>
+                </div>
+            </div>
+            
+            <!-- Step 2: Capture -->
+            <div class="step">
+                <h3><span class="step-number">2</span>Capture Funds</h3>
+                <div class="info">
+                    Partial capture of 50 EUR from the authorized 100 EUR payment.
+                </div>
+                
+                <button class="btn" onclick="capturePayment()" id="captureBtn" disabled>
+                    💰 Capture 50 EUR
+                </button>
+                
+                <div id="captureResponse" class="response-box" style="display: none;"></div>
+                <div id="storedData2" class="stored-data" style="display: none;">
+                    <strong>Capture Reference:</strong>
+                    <div id="captureData"></div>
+                </div>
+            </div>
+            
+            <!-- Step 3: Refund -->
+            <div class="step">
+                <h3><span class="step-number">3</span>Refund Money</h3>
+                <div class="info">
+                    Refund the captured 50 EUR. A 100 EUR refund would fail because only 50 EUR was captured.
+                </div>
+                
+                <button class="btn" onclick="refundPayment()" id="refundBtn" disabled>
+                    🔄 Refund 50 EUR
+                </button>
+                
+                <div id="refundResponse" class="response-box" style="display: none;"></div>
+            </div>
+            
+            <!-- Step 4: Recurring Payment -->
+            <div class="step">
+                <h3><span class="step-number">4</span>Recurring Payment with Token</h3>
+                <div class="info">
+                    Make a 50 EUR payment using the stored payment method from Step 1.
+                </div>
+                
+                <button class="btn" onclick="recurringPayment()" id="recurringBtn" disabled>
+                    🔁 Pay 50 EUR with Token
+                </button>
+                
+                <div id="recurringResponse" class="response-box" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
