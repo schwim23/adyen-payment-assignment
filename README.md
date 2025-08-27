@@ -210,27 +210,28 @@ Test different error scenarios by using these cards:
 
 ## 📊 API Testing with Postman
 
-### Using the Postman Collection
+### Direct Adyen API Collection
 
-**🚀 Quick Setup:**
-1. **Import Collection**: Import `Adyen_Payment_Flow_Demo.postman_collection.json` into Postman
-2. **Start Flask App**: Ensure Flask app is running (`python app.py`)
-3. **Configure Variables**: Update collection variables if needed (defaults work for testing)
-4. **Run Sequential Flow**: Execute requests in order: Authorize → Capture → Refund → Recurring
+**File**: `Adyen_Direct_API.postman_collection.json`
+
+**🚀 Ready to Use - No Setup Required:**
+1. **Import Collection**: Import the collection into Postman
+2. **Run Sequential Flow**: Execute requests in order: Authorize → Capture → Refund → Recurring
+3. **Demo credentials pre-configured** - start testing immediately!
 
 **✨ Collection Features:**
+- **Direct API calls**: Calls Adyen's API endpoints directly (bypasses any middleware)
+- **Demo credentials included**: API key and merchant account pre-configured
 - **Auto-populated variables**: PSP references and tokens automatically extracted between requests
-- **Pre-request validation**: Checks for required data before each request
-- **Response parsing**: Automatically stores response data for subsequent requests
-- **Comprehensive logging**: Console output for each step with success/error details
-- **Configurable parameters**: All amounts, card details, and references customizable
-- **No validation**: Direct API calls to showcase Adyen's error handling
+- **Real Adyen responses**: See actual API responses, error codes, and validation behavior
+- **Comprehensive logging**: Detailed console output for each step with success/error details
+- **Error scenario testing**: Perfect for testing edge cases and API validation
+- **No client validation**: Showcases pure Adyen API behavior and error handling
 
-**📝 Default Configuration:**
-- **Flask URL**: `http://localhost:8000`
-- **Test Card**: 4111111111111111 (Visa success)
-- **Authorization**: 10000 (100.00 EUR)
-- **Capture/Refund/Recurring**: 5000 each (50.00 EUR)
+**📝 Pre-configured Demo Setup:**
+- **API Endpoint**: `https://checkout-test.adyen.com` (Adyen test environment)
+- **Merchant Account**: `AdyenRecruitmentCOM` (demo account)
+- **Test Credentials**: Fully functional demo API key included
 
 ### Individual Endpoint Testing
 
@@ -292,19 +293,19 @@ Content-Type: application/json
 
 ```
 adyen_demo/
-├── app.py                                          # Flask application
-├── test_adyen_api.sh                              # Shell script for command-line testing
-├── Adyen_Payment_Flow_Demo.postman_collection.json # Postman collection for API testing
-├── requirements.txt                               # Python dependencies
-├── .env                                           # Environment variables (your credentials)
-├── .env.example                                   # Environment template
-├── .gitignore                                     # Git ignore rules
+├── app.py                                   # Flask application
+├── test_adyen_api.sh                       # Shell script for command-line testing
+├── Adyen_Direct_API.postman_collection.json # Postman collection for direct API testing
+├── requirements.txt                        # Python dependencies
+├── .env                                    # Environment variables (your credentials)
+├── .env.example                            # Environment template
+├── .gitignore                              # Git ignore rules
 ├── templates/
-│   └── index.html                                 # Web interface
+│   └── index.html                          # Web interface
 ├── static/
-│   ├── script.js                                  # Frontend JavaScript with logging
-│   └── styles.css                                 # Styling (black/white/grey theme)
-└── README.md                                      # This file
+│   ├── script.js                           # Frontend JavaScript with logging
+│   └── styles.css                          # Styling (black/white/grey theme)
+└── README.md                               # This file
 ```
 
 ## 🔍 Debugging

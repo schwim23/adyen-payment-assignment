@@ -1,0 +1,548 @@
+{
+	"info": {
+		"_postman_id": "adyen-direct-api",
+		"name": "Adyen Direct API - Payment Flow Demo",
+		"description": "Direct calls to Adyen's Payment API demonstrating the complete payment flow: authorization, capture, refund, and recurring payments. This collection bypasses any middleware and calls Adyen's API endpoints directly.\n\n**🚀 Ready to Use Demo:**\n1. Import this collection into Postman\n2. Run requests in sequence: Authorize → Capture → Refund → Recurring\n3. Variables are automatically extracted and passed between requests\n4. Demo credentials pre-configured - no setup required!\n\n**⚠️ Demo Collection Notice**: This collection passes all parameters directly to Adyen API with no validation to showcase API error handling behavior.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "adyen-direct-api"
+	},
+	"item": [
+		{
+			"name": "1. Authorize Payment & Tokenize Card",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Extract data from authorization response for subsequent requests",
+							"if (pm.response.code === 200) {",
+							"    const responseJson = pm.response.json();",
+							"    ",
+							"    // Store PSP Reference for capture/refund",
+							"    if (responseJson.pspReference) {",
+							"        pm.collectionVariables.set('psp_reference', responseJson.pspReference);",
+							"        console.log('✅ Stored PSP Reference:', responseJson.pspReference);",
+							"    }",
+							"    ",
+							"    // Store recurring detail reference from additionalData",
+							"    let recurringDetailRef = responseJson.pspReference; // Default fallback",
+							"    if (responseJson.additionalData && responseJson.additionalData['recurring.recurringDetailReference']) {",
+							"        recurringDetailRef = responseJson.additionalData['recurring.recurringDetailReference'];",
+							"    }",
+							"    pm.collectionVariables.set('recurring_detail_reference', recurringDetailRef);",
+							"    console.log('✅ Stored Recurring Detail Reference:', recurringDetailRef);",
+							"    ",
+							"    // Log authorization result",
+							"    if (responseJson.resultCode === 'Authorised') {",
+							"        console.log('🎉 Authorization successful! Ready for capture.');",
+							"        console.log('💳 Amount:', responseJson.amount.value, responseJson.amount.currency);",
+							"    } else {",
+							"        console.log('❌ Authorization result:', responseJson.resultCode);",
+							"        if (responseJson.refusalReason) {",
+							"            console.log('🚫 Refusal reason:', responseJson.refusalReason);",
+							"        }",
+							"    }",
+							"} else {",
+							"    console.log('❌ Authorization failed with status:', pm.response.status);",
+							"    try {",
+							"        const errorResponse = pm.response.json();",
+							"        console.log('Error details:', errorResponse);",
+							"    } catch (e) {",
+							"        console.log('Raw response:', pm.response.text());",
+							"    }",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// Generate unique reference for this payment",
+							"const timestamp = Date.now();",
+							"const reference = `Payment_${timestamp}`;",
+							"const shopperReference = `shopper_${timestamp}`;",
+							"",
+							"pm.collectionVariables.set('payment_reference', reference);",
+							"pm.collectionVariables.set('shopper_reference', shopperReference);",
+							"",
+							"console.log('🔢 Generated Payment Reference:', reference);",
+							"console.log('👤 Generated Shopper Reference:', shopperReference);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-API-Key",
+						"value": "AQEyhmfxLYLNbhNAw0m/n3Q5qf3VaY9UCJ14XWZE03G/k2NFiuiT61Fxs2EyWW36FWeCVhoQwV1bDb7kfNy1WIxIIkxgBw==-h0RrGfsGyrWPyuu/Z7SqmTOUzZo8SZ/HUo0sixqdPiM=-i1i&PSJj}d)u9Lpt<ZD",
+						"description": "Demo Adyen API Key"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"amount\": {\n    \"currency\": \"EUR\",\n    \"value\": {{auth_amount}}\n  },\n  \"reference\": \"{{payment_reference}}\",\n  \"paymentMethod\": {\n    \"type\": \"scheme\",\n    \"number\": \"{{card_number}}\",\n    \"expiryMonth\": \"{{expiry_month}}\",\n    \"expiryYear\": \"{{expiry_year}}\",\n    \"cvc\": \"{{cvc}}\",\n    \"holderName\": \"{{cardholder_name}}\"\n  },\n  \"merchantAccount\": \"AdyenRecruitmentCOM\",\n  \"captureDelayHours\": 0,\n  \"storePaymentMethod\": true,\n  \"shopperReference\": \"{{shopper_reference}}\",\n  \"shopperInteraction\": \"Ecommerce\",\n  \"recurringProcessingModel\": \"CardOnFile\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://checkout-test.adyen.com/v71/payments",
+					"host": [
+						"https://checkout-test.adyen.com"
+					],
+					"path": [
+						"v71",
+						"payments"
+					]
+				},
+				"description": "**Step 1: Authorize Payment & Tokenize Card**\n\nDirectly calls Adyen's `/v71/payments` endpoint to authorize a payment and store the payment method for future recurring payments.\n\n**Request Parameters:**\n- `amount`: Payment amount and currency\n- `reference`: Unique payment reference\n- `paymentMethod`: Card details (number, expiry, CVC, holder name)\n- `merchantAccount`: Your Adyen merchant account\n- `captureDelayHours`: 0 for manual capture\n- `storePaymentMethod`: true to enable tokenization\n- `shopperReference`: Unique shopper identifier for tokenization\n- `shopperInteraction`: \"Ecommerce\" for customer-present transactions\n- `recurringProcessingModel`: \"CardOnFile\" for initial tokenization\n\n**Expected Response:**\n- `resultCode`: \"Authorised\" for successful payments\n- `pspReference`: Adyen's payment reference (needed for capture/refund)\n- `additionalData.recurring.recurringDetailReference`: Token for recurring payments\n\n**Test Cards:**\n- **Success**: 4111111111111111\n- **Insufficient Funds**: 4000000000000002\n- **Invalid Card**: 4000000000000101\n- **3DS Required**: 4212345678901237"
+			},
+			"response": []
+		},
+		{
+			"name": "2. Capture Payment",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Log capture result",
+							"if (pm.response.code === 200) {",
+							"    const responseJson = pm.response.json();",
+							"    ",
+							"    if (responseJson.status === 'received') {",
+							"        console.log('✅ Capture request submitted successfully!');",
+							"        console.log('📝 Capture Reference:', responseJson.pspReference);",
+							"        console.log('💰 Amount:', responseJson.amount.value, responseJson.amount.currency);",
+							"        console.log('⏳ Capture will be processed shortly.');",
+							"        ",
+							"        // Store capture reference",
+							"        pm.collectionVariables.set('capture_reference', responseJson.pspReference);",
+							"    } else {",
+							"        console.log('❌ Capture status:', responseJson.status);",
+							"    }",
+							"} else {",
+							"    console.log('❌ Capture failed with status:', pm.response.status);",
+							"    try {",
+							"        const errorResponse = pm.response.json();",
+							"        console.log('Error details:', errorResponse);",
+							"        if (errorResponse.errorCode) {",
+							"            console.log('🚫 Error code:', errorResponse.errorCode);",
+							"        }",
+							"        if (errorResponse.message) {",
+							"            console.log('📝 Message:', errorResponse.message);",
+							"        }",
+							"    } catch (e) {",
+							"        console.log('Raw response:', pm.response.text());",
+							"    }",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// Validate that we have PSP reference from authorization",
+							"const pspRef = pm.collectionVariables.get('psp_reference');",
+							"if (!pspRef) {",
+							"    console.log('❌ Missing PSP Reference. Please run Step 1 (Authorization) first.');",
+							"    console.log('🔄 Current PSP Reference:', pspRef);",
+							"} else {",
+							"    console.log('✅ Using PSP Reference:', pspRef);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-API-Key",
+						"value": "AQEyhmfxLYLNbhNAw0m/n3Q5qf3VaY9UCJ14XWZE03G/k2NFiuiT61Fxs2EyWW36FWeCVhoQwV1bDb7kfNy1WIxIIkxgBw==-h0RrGfsGyrWPyuu/Z7SqmTOUzZo8SZ/HUo0sixqdPiM=-i1i&PSJj}d)u9Lpt<ZD"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"amount\": {\n    \"currency\": \"EUR\",\n    \"value\": {{capture_amount}}\n  },\n  \"reference\": \"{{payment_reference}}_capture\",\n  \"merchantAccount\": \"AdyenRecruitmentCOM\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://checkout-test.adyen.com/v71/payments/{{psp_reference}}/captures",
+					"host": [
+						"https://checkout-test.adyen.com"
+					],
+					"path": [
+						"v71",
+						"payments",
+						"{{psp_reference}}",
+						"captures"
+					]
+				},
+				"description": "**Step 2: Capture Payment**\n\nDirectly calls Adyen's `/v71/payments/{pspReference}/captures` endpoint to capture funds from an authorized payment.\n\n**URL Parameters:**\n- `pspReference`: The PSP reference from Step 1 authorization (auto-populated)\n\n**Request Parameters:**\n- `amount`: Amount to capture (cannot exceed original authorization)\n- `reference`: Unique capture reference\n- `merchantAccount`: Your Adyen merchant account\n\n**Expected Response:**\n- `status`: \"received\" (capture request accepted for processing)\n- `pspReference`: Adyen's capture reference\n- `amount`: Confirmed capture amount\n\n**Error Scenarios to Test:**\n- **Excessive amount**: Set capture_amount > auth_amount\n- **Invalid PSP reference**: Modify the psp_reference variable\n- **Duplicate capture**: Run the same request twice\n- **Zero amount**: Set capture_amount to 0"
+			},
+			"response": []
+		},
+		{
+			"name": "3. Refund Payment",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Log refund result",
+							"if (pm.response.code === 200) {",
+							"    const responseJson = pm.response.json();",
+							"    ",
+							"    if (responseJson.status === 'received') {",
+							"        console.log('✅ Refund request submitted successfully!');",
+							"        console.log('📝 Refund Reference:', responseJson.pspReference);",
+							"        console.log('💸 Amount:', responseJson.amount.value, responseJson.amount.currency);",
+							"        console.log('⏳ Refund will be processed during settlement (24-48 hours).');",
+							"        console.log('ℹ️  Note: Validation happens during settlement, not at request time.');",
+							"    } else {",
+							"        console.log('❌ Refund status:', responseJson.status);",
+							"    }",
+							"} else {",
+							"    console.log('❌ Refund failed with status:', pm.response.status);",
+							"    try {",
+							"        const errorResponse = pm.response.json();",
+							"        console.log('Error details:', errorResponse);",
+							"        if (errorResponse.errorCode) {",
+							"            console.log('🚫 Error code:', errorResponse.errorCode);",
+							"            if (errorResponse.errorCode === '137') {",
+							"                console.log('💡 Tip: Error 137 usually means invalid amount format');",
+							"            }",
+							"        }",
+							"    } catch (e) {",
+							"        console.log('Raw response:', pm.response.text());",
+							"    }",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// Validate prerequisites",
+							"const pspRef = pm.collectionVariables.get('psp_reference');",
+							"const captureRef = pm.collectionVariables.get('capture_reference');",
+							"",
+							"if (!pspRef) {",
+							"    console.log('❌ Missing PSP Reference. Please run Step 1 (Authorization) first.');",
+							"} else {",
+							"    console.log('✅ Using PSP Reference:', pspRef);",
+							"}",
+							"",
+							"if (!captureRef) {",
+							"    console.log('⚠️  No capture reference found. Consider running Step 2 (Capture) first.');",
+							"    console.log('ℹ️  Refunds work on original authorization, but capture provides better tracking.');",
+							"} else {",
+							"    console.log('✅ Capture completed with reference:', captureRef);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-API-Key",
+						"value": "AQEyhmfxLYLNbhNAw0m/n3Q5qf3VaY9UCJ14XWZE03G/k2NFiuiT61Fxs2EyWW36FWeCVhoQwV1bDb7kfNy1WIxIIkxgBw==-h0RrGfsGyrWPyuu/Z7SqmTOUzZo8SZ/HUo0sixqdPiM=-i1i&PSJj}d)u9Lpt<ZD"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"amount\": {\n    \"currency\": \"EUR\",\n    \"value\": {{refund_amount}}\n  },\n  \"reference\": \"{{payment_reference}}_refund\",\n  \"merchantAccount\": \"AdyenRecruitmentCOM\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://checkout-test.adyen.com/v71/payments/{{psp_reference}}/refunds",
+					"host": [
+						"https://checkout-test.adyen.com"
+					],
+					"path": [
+						"v71",
+						"payments",
+						"{{psp_reference}}",
+						"refunds"
+					]
+				},
+				"description": "**Step 3: Refund Payment**\n\nDirectly calls Adyen's `/v71/payments/{pspReference}/refunds` endpoint to refund a captured payment.\n\n**URL Parameters:**\n- `pspReference`: The original PSP reference from Step 1 (auto-populated)\n\n**Request Parameters:**\n- `amount`: Amount to refund\n- `reference`: Unique refund reference\n- `merchantAccount`: Your Adyen merchant account\n\n**Expected Response:**\n- `status`: \"received\" (refund request accepted for processing)\n- `pspReference`: Adyen's refund reference\n- `amount`: Confirmed refund amount\n\n**Important Notes:**\n- **Async Processing**: Refunds are processed asynchronously during settlement\n- **No Real-time Validation**: Amount validation happens during settlement, not at API level\n- **Settlement Time**: 24-48 hours for processing\n- **Excessive Refunds**: Will be accepted but fail during settlement\n\n**Error Scenarios to Test:**\n- **Extreme amounts**: Try very large numbers (e.g., 50000000000)\n- **Negative amounts**: Try negative values\n- **Invalid format**: Try non-numeric values\n- **Excessive refund**: Try amount > captured amount (will be accepted!)"
+			},
+			"response": []
+		},
+		{
+			"name": "4. Recurring Payment with Stored Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Log recurring payment result",
+							"if (pm.response.code === 200) {",
+							"    const responseJson = pm.response.json();",
+							"    ",
+							"    if (responseJson.resultCode === 'Authorised') {",
+							"        console.log('🎉 Recurring payment successful!');",
+							"        console.log('📝 Payment Reference:', responseJson.pspReference);",
+							"        console.log('💳 Amount:', responseJson.amount.value, responseJson.amount.currency);",
+							"        console.log('✅ Complete payment flow executed successfully!');",
+							"        ",
+							"        // Store recurring payment reference",
+							"        pm.collectionVariables.set('recurring_payment_reference', responseJson.pspReference);",
+							"    } else {",
+							"        console.log('❌ Recurring payment result:', responseJson.resultCode);",
+							"        if (responseJson.refusalReason) {",
+							"            console.log('🚫 Refusal reason:', responseJson.refusalReason);",
+							"        }",
+							"    }",
+							"} else {",
+							"    console.log('❌ Recurring payment failed with status:', pm.response.status);",
+							"    try {",
+							"        const errorResponse = pm.response.json();",
+							"        console.log('Error details:', errorResponse);",
+							"        if (errorResponse.errorCode === '101') {",
+							"            console.log('💡 Error 101: Invalid recurring detail reference or expired token');",
+							"        }",
+							"    } catch (e) {",
+							"        console.log('Raw response:', pm.response.text());",
+							"    }",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// Validate recurring prerequisites",
+							"const recurringRef = pm.collectionVariables.get('recurring_detail_reference');",
+							"const shopperRef = pm.collectionVariables.get('shopper_reference');",
+							"",
+							"if (!recurringRef) {",
+							"    console.log('❌ Missing Recurring Detail Reference. Please run Step 1 (Authorization) with tokenization first.');",
+							"} else {",
+							"    console.log('✅ Using Recurring Detail Reference:', recurringRef);",
+							"}",
+							"",
+							"if (!shopperRef) {",
+							"    console.log('❌ Missing Shopper Reference. Please run Step 1 (Authorization) first.');",
+							"} else {",
+							"    console.log('✅ Using Shopper Reference:', shopperRef);",
+							"}",
+							"",
+							"console.log('🔄 Making recurring payment with stored token...');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-API-Key",
+						"value": "AQEyhmfxLYLNbhNAw0m/n3Q5qf3VaY9UCJ14XWZE03G/k2NFiuiT61Fxs2EyWW36FWeCVhoQwV1bDb7kfNy1WIxIIkxgBw==-h0RrGfsGyrWPyuu/Z7SqmTOUzZo8SZ/HUo0sixqdPiM=-i1i&PSJj}d)u9Lpt<ZD"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"amount\": {\n    \"currency\": \"EUR\",\n    \"value\": {{recurring_amount}}\n  },\n  \"reference\": \"{{payment_reference}}\",\n  \"paymentMethod\": {\n    \"type\": \"scheme\",\n    \"recurringDetailReference\": \"{{recurring_detail_reference}}\"\n  },\n  \"merchantAccount\": \"AdyenRecruitmentCOM\",\n  \"shopperReference\": \"{{shopper_reference}}\",\n  \"shopperInteraction\": \"ContAuth\",\n  \"recurringProcessingModel\": \"Subscription\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://checkout-test.adyen.com/v71/payments",
+					"host": [
+						"https://checkout-test.adyen.com"
+					],
+					"path": [
+						"v71",
+						"payments"
+					]
+				},
+				"description": "**Step 4: Recurring Payment with Stored Token**\n\nDirectly calls Adyen's `/v71/payments` endpoint to process a payment using the stored payment method from Step 1.\n\n**Request Parameters:**\n- `amount`: Payment amount (independent of original authorization)\n- `reference`: Same reference as original payment (per Adyen requirements)\n- `paymentMethod.type`: \"scheme\" for card payments\n- `paymentMethod.recurringDetailReference`: Token from Step 1 (auto-populated)\n- `merchantAccount`: Your Adyen merchant account\n- `shopperReference`: Same shopper reference from Step 1 (auto-populated)\n- `shopperInteraction`: \"ContAuth\" for subsequent transactions\n- `recurringProcessingModel`: \"Subscription\" (no CVC required)\n\n**Expected Response:**\n- `resultCode`: \"Authorised\" for successful payments\n- `pspReference`: New payment reference for this recurring transaction\n- `amount`: Confirmed payment amount\n\n**Key Features:**\n- **No card details required**: Uses stored payment method\n- **Independent amount**: Not limited by original authorization\n- **No CVC required**: Subscription model handles this\n- **Same reference**: Uses original payment reference as required\n\n**Error Scenarios to Test:**\n- **Invalid token**: Modify recurring_detail_reference\n- **Mismatched shopper**: Change shopper_reference\n- **Expired token**: Use old tokens (tokens can expire)\n- **Invalid amount**: Try negative or extreme amounts"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "collection-prerequest",
+				"exec": [
+					"// Collection-level pre-request script",
+					"console.log('🚀 Adyen Direct API - Request:', pm.info.requestName);",
+					"console.log('🌐 Environment: test (checkout-test.adyen.com)');",
+					"console.log('🏪 Merchant Account: AdyenRecruitmentCOM');",
+					"console.log('🔑 Demo credentials pre-configured and ready to use!');"
+				],
+				"type": "text/javascript"
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "collection-test",
+				"exec": [
+					"// Collection-level post-request script",
+					"console.log('📊 Response Status:', pm.response.status, pm.response.code);",
+					"console.log('⏱️  Response Time:', pm.response.responseTime, 'ms');",
+					"",
+					"// Log rate limiting headers if present",
+					"const rateLimitHeader = pm.response.headers.get('X-RateLimit-Remaining');",
+					"if (rateLimitHeader) {",
+					"    console.log('🚦 Rate Limit Remaining:', rateLimitHeader);",
+					"}",
+					"",
+					"// Log any general errors",
+					"if (pm.response.code >= 400) {",
+					"    console.log('❌ Request failed - check your credentials and parameters');",
+					"}"
+				],
+				"type": "text/javascript"
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "adyen_payments_endpoint",
+			"value": "https://checkout-test.adyen.com",
+			"description": "Adyen Payments API endpoint (test: checkout-test.adyen.com, live: checkout-live.adyen.com)"
+		},
+		{
+			"key": "adyen_api_key",
+			"value": "YOUR_API_KEY_HERE",
+			"description": "Your Adyen API Key (get from Adyen Customer Area > Developers > API credentials)"
+		},
+		{
+			"key": "merchant_account",
+			"value": "YOUR_MERCHANT_ACCOUNT_HERE",
+			"description": "Your Adyen Merchant Account identifier"
+		},
+		{
+			"key": "adyen_environment",
+			"value": "test",
+			"description": "Adyen environment (test or live)"
+		},
+		{
+			"key": "cardholder_name",
+			"value": "John Smith",
+			"description": "Cardholder name for payment reference generation"
+		},
+		{
+			"key": "auth_amount",
+			"value": "10000",
+			"description": "Authorization amount in minor units (10000 = 100.00 EUR)"
+		},
+		{
+			"key": "card_number",
+			"value": "4111111111111111",
+			"description": "Test card number (Visa success card: 4111111111111111)"
+		},
+		{
+			"key": "cvc",
+			"value": "737",
+			"description": "Card CVC/CVV code"
+		},
+		{
+			"key": "expiry_month",
+			"value": "03",
+			"description": "Card expiry month (MM format)"
+		},
+		{
+			"key": "expiry_year",
+			"value": "2030",
+			"description": "Card expiry year (YYYY format)"
+		},
+		{
+			"key": "capture_amount",
+			"value": "5000",
+			"description": "Capture amount in minor units (5000 = 50.00 EUR)"
+		},
+		{
+			"key": "refund_amount",
+			"value": "5000",
+			"description": "Refund amount in minor units (5000 = 50.00 EUR)"
+		},
+		{
+			"key": "recurring_amount",
+			"value": "5000",
+			"description": "Recurring payment amount in minor units (5000 = 50.00 EUR)"
+		},
+		{
+			"key": "psp_reference",
+			"value": "",
+			"description": "PSP Reference from authorization (auto-populated)"
+		},
+		{
+			"key": "recurring_detail_reference",
+			"value": "",
+			"description": "Recurring detail reference for stored payment method (auto-populated)"
+		},
+		{
+			"key": "shopper_reference",
+			"value": "",
+			"description": "Shopper reference for tokenization (auto-populated)"
+		},
+		{
+			"key": "payment_reference",
+			"value": "",
+			"description": "Payment reference for tracking (auto-populated)"
+		},
+		{
+			"key": "capture_reference",
+			"value": "",
+			"description": "Capture reference (auto-populated after capture)"
+		},
+		{
+			"key": "recurring_payment_reference",
+			"value": "",
+			"description": "Recurring payment reference (auto-populated after recurring payment)"
+		}
+	]
+}
