@@ -326,15 +326,18 @@ EOF
     
     echo "📋 ADYEN API RESPONSE:"
     echo "====================="
+    sleep 3
     echo "${RECURRING_RESPONSE}" | jq '.'
     echo ""
     
     # Check if recurring payment was successful
     RECURRING_RESULT=$(echo ${RECURRING_RESPONSE} | jq -r '.resultCode')
     if [ "${RECURRING_RESULT}" = "Authorised" ]; then
-        echo "✅ Step 4 Complete: Recurring payment successful"
         RECURRING_PSP_REFERENCE=$(echo ${RECURRING_RESPONSE} | jq -r '.pspReference')
+        echo "✅ Step 4 Complete: Recurring payment successful"
         echo "  Recurring Payment Reference: ${RECURRING_PSP_REFERENCE}"
+        echo ""
+        echo "🎉 All payment flow steps completed successfully!"
         break
     else
         echo "❌ Recurring payment failed with result: ${RECURRING_RESULT}"
