@@ -38,7 +38,8 @@ sudo apt-get install jq
 
 ### 1. Clone and Navigate
 ```bash
-git clone <repository-url>
+git clone https://github.com/schwim23/adyen-payment-assignment.git
+
 cd adyen_demo
 ```
 
