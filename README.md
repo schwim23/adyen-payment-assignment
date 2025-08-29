@@ -1,6 +1,6 @@
 # Adyen Payment Flow Demo
 
-A complete demonstration of Adyen's payment processing flow including authorization, capture, refund, and recurring payments. Available as a Flask web application a command-line shell script with full customization and error handling capabilities and a Postman Collection.
+A complete demonstration of Adyen's payment processing flow including authorization, capture, refund, and recurring payments. Available as a Flask web application a command-line shell script with full customization and error handling capabilities, a Postman Collection and MCP server integration (running Adyen MCP locally and integrated with Claude Desktop.)
 
 > **⚠️ Demo Application Notice**: This is a demonstration application with **no client-side validation** - all parameters are passed directly to the Adyen API to showcase API error handling and response behavior. In production applications, implement proper input validation and sanitization before making API calls.
 
