@@ -354,7 +354,7 @@ For production the following changes need to be made at minimum:
 6. **Use proper logging** and monitoring
 7. **Follow PCI compliance** requirements
 
-## 🤖 Claude Desktop Integration
+## 🤖 Claude Desktop Adyen MCP Integration
 
 This project includes a Claude Desktop MCP configuration file for direct Adyen API integration:
 
@@ -367,15 +367,14 @@ This project includes a Claude Desktop MCP configuration file for direct Adyen A
 4. Restart Claude Desktop to activate the Adyen MCP integration
 
 **Benefits:**
-- Direct Adyen API calls from Claude Desktop
-- Real-time payment testing and integration
-- Enhanced development workflow with AI assistance
+- Natural Language LLM Client requests from Claude Desktop to Adyen API
 
 ## 📞 Support
 
 - **Adyen Documentation**: https://docs.adyen.com/
 - **Test Cards**: https://docs.adyen.com/development-resources/test-cards/
 - **API Reference**: https://docs.adyen.com/api-explorer/
+- **Adyen MCP Server**: https://docs.adyen.com/development-resources/mcp-server/
 
 ## 📄 License
 
