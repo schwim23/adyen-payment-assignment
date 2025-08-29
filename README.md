@@ -297,6 +297,7 @@ adyen_demo/
 ├── app.py                                   # Flask application
 ├── test_adyen_api.sh                       # Shell script for command-line testing
 ├── Adyen_Direct_API.postman_collection.json # Postman collection for direct API testing
+├── claude_desktop_config.json              # Claude Desktop MCP configuration
 ├── requirements.txt                        # Python dependencies
 ├── .env                                    # Environment variables (your credentials)
 ├── .env.example                            # Environment template
@@ -347,10 +348,28 @@ adyen_demo/
 For production the following changes need to be made at minimum:
 1. **Update endpoints** to live Adyen URLs
 2. **Use production credentials** in environment variables
-3. **Implement HTTPS** for all communications
-4. **Add authentication** to protect API endpoints
-5. **Use proper logging** and monitoring
-6. **Follow PCI compliance** requirements
+3. **Add idempotency keys** to all payment requests to prevent duplicate transactions
+4. **Implement HTTPS** for all communications
+5. **Add authentication** to protect API endpoints
+6. **Use proper logging** and monitoring
+7. **Follow PCI compliance** requirements
+
+## 🤖 Claude Desktop Integration
+
+This project includes a Claude Desktop MCP configuration file for direct Adyen API integration:
+
+**File**: `claude_desktop_config.json` - Add this to your Claude Desktop settings to enable Adyen MCP server
+
+**Setup Instructions:**
+1. Copy the contents of `claude_desktop_config.json`
+2. Add to your Claude Desktop configuration (Settings > Developer > MCP Servers)
+3. Replace `[ADYEN_API_KEY]` with your actual Adyen API key
+4. Restart Claude Desktop to activate the Adyen MCP integration
+
+**Benefits:**
+- Direct Adyen API calls from Claude Desktop
+- Real-time payment testing and integration
+- Enhanced development workflow with AI assistance
 
 ## 📞 Support
 

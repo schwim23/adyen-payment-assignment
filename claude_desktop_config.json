@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "adyen": {
+      "command": "npx",
+      "args": [
+        "-y", 
+        "@adyen/mcp", 
+        "--adyenApiKey=[ADYEN_API_KEY]", 
+        "--env=TEST"
+      ]
+    }
+  }
+}  
