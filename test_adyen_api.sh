@@ -111,8 +111,8 @@ while true; do
     echo "Enter authorization parameters:"
     CARDHOLDER_NAME=$(get_input "Cardholder Name" "John Smith")
     AUTH_AMOUNT=$(get_input "Authorization Amount (minor units, e.g. 10000 = 100.00 EUR)" "10000")
-    CARD_NUMBER=$(get_input "Card Number" "4111111111111111")
-    CVC=$(get_input "CVC" "737")
+    CARD_NUMBER=$(get_input "Card Number" "370000000000002")
+    CVC=$(get_input "CVC" "7373")
     EXPIRY_MONTH=$(get_input "Expiry Month (MM)" "03")
     EXPIRY_YEAR=$(get_input "Expiry Year (YYYY)" "2030")
     

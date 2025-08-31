@@ -99,8 +99,8 @@ def authorize_payment():
     
     full_name = data.get('fullName', '').strip()
     auth_amount = data.get('authAmount', 10000)
-    card_number = data.get('cardNumber', '4111111111111111').strip()
-    cvc = data.get('cvc', '737').strip()
+    card_number = data.get('cardNumber', '370000000000002').strip()
+    cvc = data.get('cvc', '7373').strip()
     expiry_month = data.get('expiryMonth', '03').strip()
     expiry_year = data.get('expiryYear', '2030').strip()
     
