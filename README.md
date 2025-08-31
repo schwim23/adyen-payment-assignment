@@ -1,6 +1,6 @@
 # Adyen Payment Flow Demo
 
-A complete demonstration of Adyen's payment processing flow including authorization, capture, refund, and recurring payments. Available as a Flask web application a command-line shell script with full customization and error handling capabilities and a Postman Collection.
+A complete demonstration of Adyen's payment processing flow including authorization, capture, refund, and recurring payments. Available as a Flask web application a command-line shell script with full customization and error handling capabilities, a Postman Collection and MCP server integration (running Adyen MCP locally and integrated with Claude Desktop.)
 
 > **⚠️ Demo Application Notice**: This is a demonstration application with **no client-side validation** - all parameters are passed directly to the Adyen API to showcase API error handling and response behavior. In production applications, implement proper input validation and sanitization before making API calls.
 
@@ -354,7 +354,7 @@ For production the following changes need to be made at minimum:
 6. **Use proper logging** and monitoring
 7. **Follow PCI compliance** requirements
 
-## 🤖 Claude Desktop Integration
+## 🤖 Claude Desktop Adyen MCP Integration
 
 This project includes a Claude Desktop MCP configuration file for direct Adyen API integration:
 
@@ -367,15 +367,14 @@ This project includes a Claude Desktop MCP configuration file for direct Adyen A
 4. Restart Claude Desktop to activate the Adyen MCP integration
 
 **Benefits:**
-- Direct Adyen API calls from Claude Desktop
-- Real-time payment testing and integration
-- Enhanced development workflow with AI assistance
+- Natural Language LLM Client requests from Claude Desktop to Adyen API
 
 ## 📞 Support
 
 - **Adyen Documentation**: https://docs.adyen.com/
 - **Test Cards**: https://docs.adyen.com/development-resources/test-cards/
 - **API Reference**: https://docs.adyen.com/api-explorer/
+- **Adyen MCP Server**: https://docs.adyen.com/development-resources/mcp-server/
 
 ## 📄 License
 
