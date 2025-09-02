@@ -109,7 +109,7 @@ echo "=========================================="
 # Get authorization parameters
 while true; do
     echo "Enter authorization parameters:"
-    CARDHOLDER_NAME=$(get_input "Cardholder Name" "John Smith")
+    CARDHOLDER_NAME=$(get_input "Cardholder Name" "Mike Schwimmer")
     AUTH_AMOUNT=$(get_input "Authorization Amount (minor units, e.g. 10000 = 100.00 EUR)" "10000")
     CARD_NUMBER=$(get_input "Card Number" "370000000000002")
     CVC=$(get_input "CVC" "7373")

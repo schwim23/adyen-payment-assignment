@@ -270,6 +270,6 @@ async function recurringPayment() {
 document.addEventListener('DOMContentLoaded', function() {
     logAction('DOM Content Loaded - Initializing application');
     // Initialize with placeholder name - replace with your actual name
-    document.getElementById('fullName').value = 'John Smith';
-    logAction('Default name set to John Smith');
+    document.getElementById('fullName').value = 'Mike Schwimmer';
+    logAction('Default name set to Mike Schwimmer');
 });

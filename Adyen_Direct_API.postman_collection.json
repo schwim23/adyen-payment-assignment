@@ -471,7 +471,7 @@
 		},
 		{
 			"key": "cardholder_name",
-			"value": "John Smith",
+			"value": "Mike Schwimmer",
 			"description": "Cardholder name for payment reference generation"
 		},
 		{
